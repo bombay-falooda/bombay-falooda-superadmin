@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { apiRequest } from "@/lib/api";
+import { SalesTrendChart } from "@/components/sales-trend-chart";
 
 type RangeKey = "1h" | "4h" | "1d" | "1w" | "1m";
 type OrderSource = "ALL" | "WEBSITE" | "POS" | "ZOMATO" | "SWIGGY" | "EZCATER" | "OTHER";
@@ -205,39 +206,8 @@ export default function DashboardPage() {
       </section>
 
       <section className="mt-5 grid gap-4 xl:grid-cols-[1fr_360px]">
-        <div className="rounded-[20px] border border-[#eadfd5] bg-white/72 p-4 shadow-[0_12px_34px_rgba(76,54,35,0.05)] backdrop-blur-xl">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <MiniIcon tint="purple" />
-              <div>
-                <h2 className="font-display text-xl font-semibold text-[#070b21]">Sales Trend</h2>
-                <p className="mt-1 text-sm text-[#766b64]">Gross sales over the selected range</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-[#eadfd5] bg-white/65 px-3 py-2 text-xs font-semibold text-[#7c3fe0]">
-              {data.summary.finalizedBills} bills
-            </div>
-          </div>
-
-          <div className="mt-5 h-[240px] rounded-[16px] bg-white/36 p-3">
-            <svg className="h-full w-full" viewBox="0 0 760 300" preserveAspectRatio="none">
-              {[50, 100, 150, 200, 250].map((y) => (
-                <line key={y} x1="30" x2="735" y1={y} y2={y} stroke="#eadfd5" strokeDasharray="4 6" />
-              ))}
-              <defs>
-                <linearGradient id="salesArea" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#7c3fe0" stopOpacity="0.22" />
-                  <stop offset="100%" stopColor="#7c3fe0" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <polygon points={`34,270 ${points} 734,270`} fill="url(#salesArea)" />
-              <polyline points={points} fill="none" stroke="#7c3fe0" strokeWidth="3" />
-              {points.split(" ").filter(Boolean).map((point, index) => {
-                const [x, y] = point.split(",");
-                return <circle key={`${point}-${index}`} cx={x} cy={y} r="5" fill="#fff" stroke="#7c3fe0" strokeWidth="3" />;
-              })}
-            </svg>
-          </div>
+        <div className="space-y-3">
+          <SalesTrendChart data={data.trend} />
         </div>
 
         <div className="rounded-[20px] border border-[#eadfd5] bg-white/72 p-4 shadow-[0_12px_34px_rgba(76,54,35,0.05)] backdrop-blur-xl">

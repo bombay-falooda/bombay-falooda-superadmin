@@ -1,10 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { FormSection } from "@/components/form-section";
 import { ResultDialog } from "@/components/result-dialog";
+import { CountryCodePicker } from "@/components/country-code-picker";
+import { DeliverySlabsEditor } from "@/components/delivery-slabs-editor";
 import { apiRequest } from "@/lib/api";
+import { INDIAN_STATES_AND_CITIES } from "@/lib/indian-states-cities";
 
 type OutletDraft = {
   name: string;
@@ -21,7 +25,9 @@ type OutletDraft = {
   dineIn: boolean;
   takeaway: boolean;
   delivery: boolean;
+  deliveryKmPricing?: Array<{ km: number | string; price: number | string }>;
   onlineOrdering: boolean;
+  copyMenuFromOutletId?: string;
   menuEdit: boolean;
   billEdit: boolean;
   reports: boolean;
@@ -42,7 +48,12 @@ const emptyOutlet: OutletDraft = {
   closingTime: "23:00",
   dineIn: true,
   takeaway: true,
-  delivery: false,
+  delivery: true,
+  deliveryKmPricing: [
+    { km: 2, price: 30 },
+    { km: 3, price: 45 },
+    { km: 5, price: 70 },
+  ],
   onlineOrdering: true,
   menuEdit: true,
   billEdit: false,
@@ -99,26 +110,150 @@ function makeKey(prefix: string, index: number) {
 }
 
 function TextField({
+  id,
   label,
   value,
   type = "text",
+  required,
+  error,
   onChange,
 }: {
+  id?: string;
   label: string;
   value: string;
   type?: string;
+  required?: boolean;
+  error?: string;
   onChange: (value: string) => void;
 }) {
   return (
-    <label>
-      <span className="form-label">{label}</span>
+    <div>
+      <label htmlFor={id} className="form-label flex items-center gap-1">
+        <span>{label}</span>
+        {required ? <span className="text-sm font-bold text-red-500">*</span> : null}
+      </label>
       <input
-        className="form-input"
+        id={id}
+        className={`form-input transition ${
+          error
+            ? "!border-red-500 !bg-red-50/50 !text-red-900 focus:!border-red-600 focus:!ring-2 focus:!ring-red-500/20"
+            : ""
+        }`}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
-    </label>
+      {error ? (
+        <p className="mt-1.5 text-xs font-semibold text-red-500 flex items-center gap-1">
+          <svg className="h-3.5 w-3.5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>{error}</span>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function SelectField({
+  id,
+  label,
+  value,
+  options,
+  required,
+  error,
+  onChange,
+}: {
+  id?: string;
+  label: string;
+  value: string;
+  options: Array<{ label: string; value: string }>;
+  required?: boolean;
+  error?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="form-label flex items-center gap-1">
+        <span>{label}</span>
+        {required ? <span className="text-sm font-bold text-red-500">*</span> : null}
+      </label>
+      <select
+        id={id}
+        className={`form-input cursor-pointer bg-white transition ${
+          error
+            ? "!border-red-500 !bg-red-50/50 !text-red-900 focus:!border-red-600 focus:!ring-2 focus:!ring-red-500/20"
+            : ""
+        }`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">Select {label}</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      {error ? (
+        <p className="mt-1.5 text-xs font-semibold text-red-500 flex items-center gap-1">
+          <svg className="h-3.5 w-3.5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>{error}</span>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function PhoneField({
+  id,
+  label,
+  value,
+  countryCode = "+91",
+  required,
+  error,
+  onChange,
+}: {
+  id?: string;
+  label: string;
+  value: string;
+  countryCode?: string;
+  required?: boolean;
+  error?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="form-label flex items-center gap-1">
+        <span>{label}</span>
+        {required ? <span className="text-sm font-bold text-red-500">*</span> : null}
+      </label>
+      <div className="flex items-center gap-2.5">
+        <CountryCodePicker value={countryCode} />
+        <input
+          id={id}
+          className={`form-input transition min-w-0 flex-1 ${
+            error
+              ? "!border-red-500 !bg-red-50/50 !text-red-900 focus:!border-red-600 focus:!ring-2 focus:!ring-red-500/20"
+              : ""
+          }`}
+          type="tel"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="99999 99999"
+        />
+      </div>
+      {error ? (
+        <p className="mt-1.5 text-xs font-semibold text-red-500 flex items-center gap-1">
+          <svg className="h-3.5 w-3.5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>{error}</span>
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -166,6 +301,7 @@ function SetupMetric({
 }
 
 export default function SetupFranchisePage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -175,6 +311,9 @@ export default function SetupFranchisePage() {
     error: false,
   });
   const [setupResponse, setSetupResponse] = useState<SetupResponse | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null);
+
   const [franchise, setFranchise] = useState({
     franchiseName: "",
     contactPersonName: "",
@@ -182,7 +321,7 @@ export default function SetupFranchisePage() {
     phone: "",
     address: "",
     city: "",
-    state: "",
+    state: "Gujarat",
     pincode: "",
     agreementStartDate: "",
     agreementEndDate: "",
@@ -196,15 +335,36 @@ export default function SetupFranchisePage() {
     canRouteOrders: true,
     canRequestExtraPos: true,
   });
-  const [outlets, setOutlets] = useState<OutletDraft[]>([{ ...emptyOutlet }]);
+  const [outlets, setOutlets] = useState<OutletDraft[]>([
+    { ...emptyOutlet, state: "Gujarat", city: "Surat" },
+  ]);
   const [pos, setPos] = useState({
     defaultPermanentPos: 1,
     extraPermanentPos: 0,
+    extraPosMonthlyPrice: 1000,
     billingCycle: "Monthly",
   });
 
   const totalPos = pos.defaultPermanentPos + pos.extraPermanentPos;
-  const monthlyPosAmount = pos.extraPermanentPos * posMonthlyPrice;
+  const monthlyPosAmount = pos.extraPermanentPos * pos.extraPosMonthlyPrice;
+
+  const stateOptions = useMemo(() => {
+    return INDIAN_STATES_AND_CITIES.map((s) => ({ label: s.state, value: s.state }));
+  }, []);
+
+  const franchiseCityOptions = useMemo(() => {
+    const foundState = INDIAN_STATES_AND_CITIES.find((s) => s.state === franchise.state);
+    return foundState
+      ? foundState.cities.map((c) => ({ label: c, value: c }))
+      : [{ label: franchise.city || "Custom", value: franchise.city }];
+  }, [franchise.state, franchise.city]);
+
+  function getOutletCityOptions(stateName: string, currentCity: string) {
+    const foundState = INDIAN_STATES_AND_CITIES.find((s) => s.state === stateName);
+    return foundState
+      ? foundState.cities.map((c) => ({ label: c, value: c }))
+      : [{ label: currentCity || "Custom", value: currentCity }];
+  }
 
   const document = useMemo(() => {
     if (setupResponse) {
@@ -234,25 +394,153 @@ export default function SetupFranchisePage() {
 
   function updateFranchise(key: keyof typeof franchise, value: string | boolean) {
     setFranchise((current) => ({ ...current, [key]: value }));
+    if (errors[key]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
   }
 
-  function updateOutlet(index: number, key: keyof OutletDraft, value: string | boolean) {
+  function updateOutlet(index: number, key: keyof OutletDraft, value: any) {
     setOutlets((current) =>
       current.map((outlet, outletIndex) =>
         outletIndex === index ? { ...outlet, [key]: value } : outlet,
       ),
     );
+    const fieldId = `outlet_${index}_${key}`;
+    if (errors[fieldId]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[fieldId];
+        return next;
+      });
+    }
   }
 
   function addOutlet() {
-    setOutlets((current) => [...current, { ...emptyOutlet }]);
+    setOutlets((current) => [
+      ...current,
+      { ...emptyOutlet, state: franchise.state || "Gujarat", city: franchise.city || "Surat" },
+    ]);
   }
 
   function removeOutlet(index: number) {
     setOutlets((current) => current.filter((_, outletIndex) => outletIndex !== index));
   }
 
+  function validateCurrentStep(stepToValidate: number): boolean {
+    const newErrors: Record<string, string> = {};
+    let firstFailedFieldId = "";
+
+    if (stepToValidate === 0) {
+      if (!franchise.franchiseName.trim()) {
+        newErrors["franchiseName"] = "Franchise Name is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "franchiseName";
+      }
+      if (!franchise.contactPersonName.trim()) {
+        newErrors["contactPersonName"] = "Contact Person Name is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "contactPersonName";
+      }
+      if (!franchise.email.trim()) {
+        newErrors["email"] = "Email address is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "email";
+      } else if (!franchise.email.includes("@")) {
+        newErrors["email"] = "Please enter a valid email address";
+        if (!firstFailedFieldId) firstFailedFieldId = "email";
+      }
+      if (!franchise.phone.trim()) {
+        newErrors["phone"] = "Phone number is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "phone";
+      }
+      if (!franchise.address.trim()) {
+        newErrors["address"] = "Address is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "address";
+      }
+      if (!franchise.state.trim()) {
+        newErrors["state"] = "State is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "state";
+      }
+      if (!franchise.city.trim()) {
+        newErrors["city"] = "City is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "city";
+      }
+      if (!franchise.pincode.trim()) {
+        newErrors["pincode"] = "Pincode is required";
+        if (!firstFailedFieldId) firstFailedFieldId = "pincode";
+      }
+    }
+
+    if (stepToValidate === 1) {
+      if (outlets.length === 0) {
+        setDialog({ title: "Validation Error", message: "At least one outlet is required.", error: true });
+        setDialogOpen(true);
+        return false;
+      }
+      for (let i = 0; i < outlets.length; i++) {
+        if (!outlets[i].name.trim()) {
+          const fieldId = `outlet_${i}_name`;
+          newErrors[fieldId] = "Outlet Name is required";
+          if (!firstFailedFieldId) firstFailedFieldId = fieldId;
+        }
+        if (!outlets[i].code.trim()) {
+          const fieldId = `outlet_${i}_code`;
+          newErrors[fieldId] = "Outlet Code is required";
+          if (!firstFailedFieldId) firstFailedFieldId = fieldId;
+        }
+        if (!outlets[i].phone.trim()) {
+          const fieldId = `outlet_${i}_phone`;
+          newErrors[fieldId] = "Phone number is required";
+          if (!firstFailedFieldId) firstFailedFieldId = fieldId;
+        }
+        if (!outlets[i].address.trim()) {
+          const fieldId = `outlet_${i}_address`;
+          newErrors[fieldId] = "Address is required";
+          if (!firstFailedFieldId) firstFailedFieldId = fieldId;
+        }
+        if (!outlets[i].state.trim()) {
+          const fieldId = `outlet_${i}_state`;
+          newErrors[fieldId] = "State is required";
+          if (!firstFailedFieldId) firstFailedFieldId = fieldId;
+        }
+        if (!outlets[i].city.trim()) {
+          const fieldId = `outlet_${i}_city`;
+          newErrors[fieldId] = "City is required";
+          if (!firstFailedFieldId) firstFailedFieldId = fieldId;
+        }
+        if (!outlets[i].pincode.trim()) {
+          const fieldId = `outlet_${i}_pincode`;
+          newErrors[fieldId] = "Pincode is required";
+          if (!firstFailedFieldId) firstFailedFieldId = fieldId;
+        }
+      }
+    }
+
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+
+    if (firstFailedFieldId) {
+      setFocusedFieldId(firstFailedFieldId);
+      const firstErrorMsg = newErrors[firstFailedFieldId];
+      setDialog({ title: "Validation Error", message: firstErrorMsg, error: true });
+      setDialogOpen(true);
+      return false;
+    }
+
+    return true;
+  }
+
+  function goToStep(targetStep: number) {
+    if (targetStep > step) {
+      for (let s = step; s < targetStep; s++) {
+        if (!validateCurrentStep(s)) return;
+      }
+    }
+    setStep(targetStep);
+  }
+
   function nextStep() {
+    if (!validateCurrentStep(step)) return;
     setStep((current) => Math.min(current + 1, steps.length - 1));
   }
 
@@ -295,6 +583,15 @@ export default function SetupFranchisePage() {
   }
 
   async function createFranchiseSetup() {
+    if (!validateCurrentStep(0)) {
+      setStep(0);
+      return;
+    }
+    if (!validateCurrentStep(1)) {
+      setStep(1);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -302,6 +599,22 @@ export default function SetupFranchisePage() {
         method: "POST",
         body: setupPayload(),
       });
+
+      if (response.outlets && response.outlets.length > 0) {
+        for (let i = 0; i < response.outlets.length; i++) {
+          const createdOutlet = response.outlets[i];
+          const draftOutlet = outlets[i];
+          if (draftOutlet && draftOutlet.copyMenuFromOutletId) {
+            try {
+              await apiRequest(`/outlets/${createdOutlet.id}/copy-menu-from/${draftOutlet.copyMenuFromOutletId}`, {
+                method: "POST",
+              });
+            } catch {
+              // Copy menu fallback
+            }
+          }
+        }
+      }
 
       setSetupResponse(response);
       setDialog({
@@ -312,9 +625,19 @@ export default function SetupFranchisePage() {
       });
       setDialogOpen(true);
     } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Request failed";
+      if (errMsg.toLowerCase().includes("email")) {
+        setErrors((prev) => ({ ...prev, email: errMsg }));
+        setFocusedFieldId("email");
+        setStep(0);
+      } else if (errMsg.toLowerCase().includes("phone")) {
+        setErrors((prev) => ({ ...prev, phone: errMsg }));
+        setFocusedFieldId("phone");
+        setStep(0);
+      }
       setDialog({
         title: "Could not create setup",
-        message: err instanceof Error ? err.message : "Request failed",
+        message: errMsg,
         error: true,
       });
       setDialogOpen(true);
@@ -410,7 +733,7 @@ export default function SetupFranchisePage() {
                     : "border-[#eadfd5] bg-white/58 text-[#8a7667] hover:bg-white"
               }`}
               type="button"
-              onClick={() => setStep(index)}
+              onClick={() => goToStep(index)}
             >
               <span className="block text-xs opacity-70">Step {index + 1}</span>
               {item}
@@ -426,14 +749,14 @@ export default function SetupFranchisePage() {
               Basic ownership, address, agreement and platform permissions.
             </p>
           </div>
-          <TextField label="Franchise Name" value={franchise.franchiseName} onChange={(value) => updateFranchise("franchiseName", value)} />
-          <TextField label="Contact Person Name" value={franchise.contactPersonName} onChange={(value) => updateFranchise("contactPersonName", value)} />
-          <TextField label="Email" value={franchise.email} onChange={(value) => updateFranchise("email", value)} />
-          <TextField label="Phone Number" value={franchise.phone} onChange={(value) => updateFranchise("phone", value)} />
-          <TextField label="Address" value={franchise.address} onChange={(value) => updateFranchise("address", value)} />
-          <TextField label="City" value={franchise.city} onChange={(value) => updateFranchise("city", value)} />
-          <TextField label="State" value={franchise.state} onChange={(value) => updateFranchise("state", value)} />
-          <TextField label="Pincode" value={franchise.pincode} onChange={(value) => updateFranchise("pincode", value)} />
+          <TextField id="franchiseName" label="Franchise Name" required error={errors.franchiseName} value={franchise.franchiseName} onChange={(value) => updateFranchise("franchiseName", value)} />
+          <TextField id="contactPersonName" label="Contact Person Name" required error={errors.contactPersonName} value={franchise.contactPersonName} onChange={(value) => updateFranchise("contactPersonName", value)} />
+          <TextField id="email" label="Email" type="email" required error={errors.email} value={franchise.email} onChange={(value) => updateFranchise("email", value)} />
+          <PhoneField id="phone" label="Phone Number" required error={errors.phone} value={franchise.phone} onChange={(value) => updateFranchise("phone", value)} />
+          <TextField id="address" label="Address" required error={errors.address} value={franchise.address} onChange={(value) => updateFranchise("address", value)} />
+          <SelectField id="state" label="State" required error={errors.state} value={franchise.state} options={stateOptions} onChange={(value) => updateFranchise("state", value)} />
+          <SelectField id="city" label="City" required error={errors.city} value={franchise.city} options={franchiseCityOptions} onChange={(value) => updateFranchise("city", value)} />
+          <TextField id="pincode" label="Pincode" required error={errors.pincode} value={franchise.pincode} onChange={(value) => updateFranchise("pincode", value)} />
           <TextField label="Agreement Start Date" type="date" value={franchise.agreementStartDate} onChange={(value) => updateFranchise("agreementStartDate", value)} />
           <TextField label="Agreement End Date" type="date" value={franchise.agreementEndDate} onChange={(value) => updateFranchise("agreementEndDate", value)} />
           <TextField label="GST Number" value={franchise.gstNumber} onChange={(value) => updateFranchise("gstNumber", value)} />
@@ -467,15 +790,15 @@ export default function SetupFranchisePage() {
                 ) : null}
               </div>
               <div className="grid gap-5 md:grid-cols-2">
-                <TextField label="Outlet Name" value={outlet.name} onChange={(value) => updateOutlet(index, "name", value)} />
-                <TextField label="Outlet Code" value={outlet.code} onChange={(value) => updateOutlet(index, "code", value)} />
-                <TextField label="Contact Person" value={outlet.contactName} onChange={(value) => updateOutlet(index, "contactName", value)} />
-                <TextField label="Phone" value={outlet.phone} onChange={(value) => updateOutlet(index, "phone", value)} />
-                <TextField label="Email" value={outlet.email} onChange={(value) => updateOutlet(index, "email", value)} />
-                <TextField label="Address" value={outlet.address} onChange={(value) => updateOutlet(index, "address", value)} />
-                <TextField label="City" value={outlet.city} onChange={(value) => updateOutlet(index, "city", value)} />
-                <TextField label="State" value={outlet.state} onChange={(value) => updateOutlet(index, "state", value)} />
-                <TextField label="Pincode" value={outlet.pincode} onChange={(value) => updateOutlet(index, "pincode", value)} />
+                <TextField id={`outlet_${index}_name`} label="Outlet Name" required error={errors[`outlet_${index}_name`]} value={outlet.name} onChange={(value) => updateOutlet(index, "name", value)} />
+                <TextField id={`outlet_${index}_code`} label="Outlet Code" required error={errors[`outlet_${index}_code`]} value={outlet.code} onChange={(value) => updateOutlet(index, "code", value)} />
+                <TextField id={`outlet_${index}_contactName`} label="Contact Person" value={outlet.contactName} onChange={(value) => updateOutlet(index, "contactName", value)} />
+                <PhoneField id={`outlet_${index}_phone`} label="Phone" required error={errors[`outlet_${index}_phone`]} value={outlet.phone} onChange={(value) => updateOutlet(index, "phone", value)} />
+                <TextField id={`outlet_${index}_email`} label="Email" value={outlet.email} onChange={(value) => updateOutlet(index, "email", value)} />
+                <TextField id={`outlet_${index}_address`} label="Address" required error={errors[`outlet_${index}_address`]} value={outlet.address} onChange={(value) => updateOutlet(index, "address", value)} />
+                <SelectField id={`outlet_${index}_state`} label="State" required error={errors[`outlet_${index}_state`]} value={outlet.state} options={stateOptions} onChange={(value) => updateOutlet(index, "state", value)} />
+                <SelectField id={`outlet_${index}_city`} label="City" required error={errors[`outlet_${index}_city`]} value={outlet.city} options={getOutletCityOptions(outlet.state, outlet.city)} onChange={(value) => updateOutlet(index, "city", value)} />
+                <TextField id={`outlet_${index}_pincode`} label="Pincode" required error={errors[`outlet_${index}_pincode`]} value={outlet.pincode} onChange={(value) => updateOutlet(index, "pincode", value)} />
                 <TextField label="Opening Time" type="time" value={outlet.openingTime} onChange={(value) => updateOutlet(index, "openingTime", value)} />
                 <TextField label="Closing Time" type="time" value={outlet.closingTime} onChange={(value) => updateOutlet(index, "closingTime", value)} />
               </div>
@@ -489,6 +812,13 @@ export default function SetupFranchisePage() {
                 <PermissionToggle label="Reports" checked={outlet.reports} onChange={(value) => updateOutlet(index, "reports", value)} />
                 <PermissionToggle label="Order routing" checked={outlet.orderRouting} onChange={(value) => updateOutlet(index, "orderRouting", value)} />
               </div>
+
+              <div className="mt-4">
+                <DeliverySlabsEditor
+                  slabs={outlet.deliveryKmPricing || []}
+                  onChange={(slabs) => updateOutlet(index, "deliveryKmPricing", slabs)}
+                />
+              </div>
             </div>
           ))}
           <button className="btn-secondary" type="button" onClick={addOutlet}>
@@ -501,14 +831,15 @@ export default function SetupFranchisePage() {
         <FormSection title="POS Setup">
           <div className="md:col-span-2">
             <p className="text-sm text-[#766b64]">
-              One permanent POS is included by default. Extra POS is billed at Rs 1000 per month.
+              One permanent POS is included by default. Extra POS monthly pricing can be customized for this setup.
             </p>
           </div>
-          <TextField label="Default Permanent POS" value={String(pos.defaultPermanentPos)} onChange={(value) => setPos((current) => ({ ...current, defaultPermanentPos: Number(value) || 1 }))} />
-          <TextField label="Extra Permanent POS" value={String(pos.extraPermanentPos)} onChange={(value) => setPos((current) => ({ ...current, extraPermanentPos: Math.max(0, Number(value) || 0) }))} />
+          <TextField label="Default Permanent POS" type="number" value={String(pos.defaultPermanentPos)} onChange={(value) => setPos((current) => ({ ...current, defaultPermanentPos: Number(value) || 1 }))} />
+          <TextField label="Extra Permanent POS" type="number" value={String(pos.extraPermanentPos)} onChange={(value) => setPos((current) => ({ ...current, extraPermanentPos: Math.max(0, Number(value) || 0) }))} />
+          <TextField label="Extra POS Price (Rs/month)" type="number" value={String(pos.extraPosMonthlyPrice)} onChange={(value) => setPos((current) => ({ ...current, extraPosMonthlyPrice: Math.max(0, Number(value) || 0) }))} />
           <label>
             <span className="form-label">Billing Cycle</span>
-            <select className="form-input" value={pos.billingCycle} onChange={(event) => setPos((current) => ({ ...current, billingCycle: event.target.value }))}>
+            <select className="form-input cursor-pointer bg-white" value={pos.billingCycle} onChange={(event) => setPos((current) => ({ ...current, billingCycle: event.target.value }))}>
               <option value="Monthly">Monthly</option>
               <option value="Quarterly">Quarterly</option>
               <option value="Yearly">Yearly</option>
@@ -516,7 +847,7 @@ export default function SetupFranchisePage() {
           </label>
           <div className="md:col-span-2 grid gap-4 md:grid-cols-3">
             <div className="rounded-[18px] border border-[#eadfd5] bg-white/62 p-4"><div className="text-sm text-[#766b64]">Total POS</div><div className="font-display mt-1 text-3xl font-semibold text-[#070b21]">{totalPos}</div></div>
-            <div className="rounded-[18px] border border-[#eadfd5] bg-white/62 p-4"><div className="text-sm text-[#766b64]">Extra POS pricing</div><div className="font-display mt-1 text-3xl font-semibold text-[#070b21]">Rs {posMonthlyPrice}</div></div>
+            <div className="rounded-[18px] border border-[#eadfd5] bg-white/62 p-4"><div className="text-sm text-[#766b64]">Extra POS price</div><div className="font-display mt-1 text-3xl font-semibold text-[#070b21]">Rs {pos.extraPosMonthlyPrice}</div></div>
             <div className="rounded-[18px] border border-[#eadfd5] bg-[#f6eafa] p-4"><div className="text-sm text-[#766b64]">Monthly add-on</div><div className="font-display mt-1 text-3xl font-semibold text-[#7c3fe0]">Rs {monthlyPosAmount}</div></div>
           </div>
         </FormSection>
@@ -598,7 +929,23 @@ export default function SetupFranchisePage() {
         title={dialog.title}
         message={dialog.message}
         tone={dialog.error ? "error" : "success"}
-        onPrimary={() => setDialogOpen(false)}
+        onPrimary={() => {
+          setDialogOpen(false);
+          if (!dialog.error && setupResponse) {
+            router.push("/franchises");
+          } else if (focusedFieldId) {
+            setTimeout(() => {
+              const elem = window.document.getElementById(focusedFieldId);
+              if (elem) {
+                elem.focus();
+                if ("select" in elem && typeof (elem as HTMLInputElement).select === "function") {
+                  (elem as HTMLInputElement).select();
+                }
+                elem.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            }, 150);
+          }
+        }}
       />
     </>
   );

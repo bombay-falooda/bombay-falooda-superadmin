@@ -24,7 +24,6 @@ const navItems: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/setup-franchise", label: "Setup Franchise", icon: "setup" },
   { href: "/outlet-management", label: "Outlet Management", icon: "outlet" },
   { href: "/team-management", label: "Team Management", icon: "team" },
-  { href: "/users", label: "Users", icon: "users" },
   { href: "/franchises", label: "Franchises", icon: "franchise" },
   { href: "/pos-devices", label: "POS Devices", icon: "pos" },
   { href: "/audit-logs", label: "Audit Logs", icon: "audit" },

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { FormSection } from "@/components/form-section";
 import { PageHeader } from "@/components/page-header";
 import { ResultDialog } from "@/components/result-dialog";
+import { CountryCodePicker } from "@/components/country-code-picker";
 import { apiRequest } from "@/lib/api";
 
 type Outlet = {
@@ -15,7 +16,8 @@ type Outlet = {
   code: string;
   address: string;
   status: string;
-  franchise?: { name: string } | null;
+  franchiseId?: string | null;
+  franchise?: { id?: string; name: string } | null;
 };
 
 const defaultForm = {
@@ -59,6 +61,11 @@ export default function NewPosDevicePage() {
     () => outlets.find((outlet) => outlet.id === form.outletId),
     [form.outletId, outlets],
   );
+
+  const backUrl = useMemo(() => {
+    const fid = selectedOutlet?.franchiseId || selectedOutlet?.franchise?.id;
+    return fid ? `/franchises/${fid}` : "/pos-devices";
+  }, [selectedOutlet]);
 
   function setValue(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -114,18 +121,24 @@ export default function NewPosDevicePage() {
 
   return (
     <>
-      <PageHeader title="Add POS Device" description="Select an outlet and add permanent or temporary POS access.">
-        <Link className="btn-secondary" href="/pos-devices">
+      <PageHeader
+        title="Add POS Device"
+        description="Select an outlet and add permanent or temporary POS access with required details."
+      >
+        <Link className="btn-secondary" href={backUrl}>
           Back
         </Link>
       </PageHeader>
 
-      <form className="space-y-5" onSubmit={submit}>
+      <form className="space-y-6" onSubmit={submit}>
         <FormSection title="Outlet Selection">
-          <label>
-            <span className="form-label">Outlet</span>
+          <div>
+            <label className="form-label flex items-center gap-1">
+              <span>Outlet</span>
+              <span className="text-sm font-bold text-red-500">*</span>
+            </label>
             <select
-              className="form-input"
+              className="form-input cursor-pointer bg-white"
               required
               value={form.outletId}
               onChange={(event) => setValue("outletId", event.target.value)}
@@ -139,12 +152,13 @@ export default function NewPosDevicePage() {
                 </option>
               ))}
             </select>
-          </label>
-          <div className="rounded-xl border border-slate-200 bg-white/70 p-4">
-            <div className="text-sm font-semibold text-slate-950">
+          </div>
+
+          <div className="rounded-[18px] border border-[#eadfd5] bg-white/68 p-4 shadow-xs">
+            <div className="font-display text-lg font-semibold text-[#070b21]">
               {selectedOutlet?.name || "No outlet selected"}
             </div>
-            <div className="mt-1 text-sm leading-6 text-slate-500">
+            <div className="mt-1 text-sm text-[#766b64]">
               {selectedOutlet
                 ? `${selectedOutlet.address || "Location not added"} | ${selectedOutlet.status}`
                 : "Choose an outlet before creating a POS device."}
@@ -152,49 +166,63 @@ export default function NewPosDevicePage() {
           </div>
         </FormSection>
 
-        <FormSection title="POS Details">
-          <label>
-            <span className="form-label">POS Name</span>
+        <FormSection title="POS Device Details">
+          <div>
+            <label className="form-label flex items-center gap-1">
+              <span>POS Device Name</span>
+              <span className="text-sm font-bold text-red-500">*</span>
+            </label>
             <input
               className="form-input"
               required
+              placeholder="e.g. Counter 1 POS"
               value={form.name}
               onChange={(event) => setValue("name", event.target.value)}
             />
-          </label>
-          <label>
-            <span className="form-label">Device Code</span>
+          </div>
+
+          <div>
+            <label className="form-label flex items-center gap-1">
+              <span>Device Code</span>
+              <span className="text-sm font-bold text-red-500">*</span>
+            </label>
             <input
-              className="form-input"
+              className="form-input font-mono"
+              required
+              placeholder="e.g. POS-MAIN-01"
               value={form.deviceCode}
               onChange={(event) => setValue("deviceCode", event.target.value)}
             />
-          </label>
-          <label>
-            <span className="form-label">PIN</span>
+          </div>
+
+          <div>
+            <label className="form-label">PIN</label>
             <input
               className="form-input"
               maxLength={12}
               minLength={4}
+              placeholder="4 to 12 digit security PIN"
               value={form.pin}
               onChange={(event) => setValue("pin", event.target.value)}
             />
-          </label>
-          <label>
-            <span className="form-label">Type</span>
+          </div>
+
+          <div>
+            <label className="form-label">Type</label>
             <select
-              className="form-input"
+              className="form-input cursor-pointer bg-white"
               value={form.type}
               onChange={(event) => setValue("type", event.target.value)}
             >
               <option value="PERMANENT">Permanent POS</option>
               <option value="TEMPORARY">Temporary POS</option>
             </select>
-          </label>
-          <label>
-            <span className="form-label">Status</span>
+          </div>
+
+          <div>
+            <label className="form-label">Status</label>
             <select
-              className="form-input"
+              className="form-input cursor-pointer bg-white"
               value={form.status}
               onChange={(event) => setValue("status", event.target.value)}
             >
@@ -203,44 +231,83 @@ export default function NewPosDevicePage() {
               <option value="PENDING">Pending</option>
               <option value="REVOKED">Revoked</option>
             </select>
-          </label>
+          </div>
         </FormSection>
 
         {form.type === "TEMPORARY" ? (
           <FormSection title="Temporary POS Details">
-            <label>
-              <span className="form-label">Event Name</span>
-              <input className="form-input" value={form.eventName} onChange={(event) => setValue("eventName", event.target.value)} />
-            </label>
-            <label>
-              <span className="form-label">Event Location</span>
-              <input className="form-input" value={form.eventLocation} onChange={(event) => setValue("eventLocation", event.target.value)} />
-            </label>
-            <label>
-              <span className="form-label">Handler Name</span>
-              <input className="form-input" value={form.handlerName} onChange={(event) => setValue("handlerName", event.target.value)} />
-            </label>
-            <label>
-              <span className="form-label">Handler Phone</span>
-              <input className="form-input" value={form.handlerPhone} onChange={(event) => setValue("handlerPhone", event.target.value)} />
-            </label>
-            <label>
-              <span className="form-label">Valid From</span>
-              <input className="form-input" type="datetime-local" value={form.validFrom} onChange={(event) => setValue("validFrom", event.target.value)} />
-            </label>
-            <label>
-              <span className="form-label">Valid Until</span>
-              <input className="form-input" type="datetime-local" value={form.validUntil} onChange={(event) => setValue("validUntil", event.target.value)} />
-            </label>
+            <div>
+              <label className="form-label">Event Name</label>
+              <input
+                className="form-input"
+                placeholder="e.g. Summer Food Fest"
+                value={form.eventName}
+                onChange={(event) => setValue("eventName", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Event Location</label>
+              <input
+                className="form-input"
+                placeholder="e.g. Exhibition Ground Hall 2"
+                value={form.eventLocation}
+                onChange={(event) => setValue("eventLocation", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Handler Name</label>
+              <input
+                className="form-input"
+                placeholder="Responsible person"
+                value={form.handlerName}
+                onChange={(event) => setValue("handlerName", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Handler Phone</label>
+              <div className="flex items-center gap-2.5">
+                <CountryCodePicker value="+91" />
+                <input
+                  className="form-input min-w-0 flex-1"
+                  type="tel"
+                  placeholder="99999 99999"
+                  value={form.handlerPhone}
+                  onChange={(event) => setValue("handlerPhone", event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label">Valid From</label>
+              <input
+                className="form-input"
+                type="datetime-local"
+                value={form.validFrom}
+                onChange={(event) => setValue("validFrom", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Valid Until</label>
+              <input
+                className="form-input"
+                type="datetime-local"
+                value={form.validUntil}
+                onChange={(event) => setValue("validUntil", event.target.value)}
+              />
+            </div>
           </FormSection>
         ) : null}
 
         <div className="flex justify-end gap-3">
-          <button className="btn-secondary" type="button" onClick={() => setForm(defaultForm)}>
-            Clear
-          </button>
+          <Link className="btn-secondary" href={backUrl}>
+            Cancel
+          </Link>
           <button className="btn-primary" type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save POS"}
+            {saving ? "Saving..." : "Save POS Device"}
           </button>
         </div>
       </form>
@@ -250,9 +317,11 @@ export default function NewPosDevicePage() {
         title={dialog.title}
         message={dialog.message}
         tone={dialog.error ? "error" : "success"}
-        primaryLabel={dialog.error ? "Try Again" : "Back to POS Devices"}
+        primaryLabel={dialog.error ? "Try Again" : "Done"}
         onPrimary={() =>
-          dialog.error ? setDialog({ ...dialog, open: false }) : router.push("/pos-devices")
+          dialog.error
+            ? setDialog((current) => ({ ...current, open: false }))
+            : router.push(backUrl)
         }
       />
     </>

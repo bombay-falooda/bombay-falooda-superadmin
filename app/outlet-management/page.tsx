@@ -134,6 +134,24 @@ export default function OutletManagementPage() {
     }
   }
 
+  async function toggleStatus(outlet: Outlet) {
+    const nextStatus = outlet.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    try {
+      await apiRequest(`/outlets/${outlet.id}`, {
+        method: "PATCH",
+        body: { status: nextStatus },
+      });
+      await refreshOutlets();
+    } catch (err) {
+      setDialog({
+        open: true,
+        title: "Could not update status",
+        message: err instanceof Error ? err.message : "Request failed",
+        error: true,
+      });
+    }
+  }
+
   const selectedFranchise = useMemo(
     () => franchises.find((franchise) => franchise.id === franchiseId),
     [franchiseId, franchises],
@@ -252,7 +270,13 @@ export default function OutletManagementPage() {
             visibleOutlets.map((outlet) => (
               <tr key={outlet.id} className="hover:bg-white/60">
                 <td className="px-5 py-4">
-                  <div className="font-medium text-[#070b21]">{outlet.name}</div>
+                  <Link
+                    className="font-semibold text-[#070b21] hover:text-[#7c3fe0] hover:underline flex items-center gap-1.5"
+                    href={`/outlets/${outlet.id}`}
+                  >
+                    <span>{outlet.name}</span>
+                    <span className="text-[10px] text-[#7c3fe0]">↗</span>
+                  </Link>
                   <div className="text-xs text-[#766b64]">
                     {outlet.code} | {outlet.address}
                   </div>
@@ -284,16 +308,22 @@ export default function OutletManagementPage() {
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex flex-wrap gap-2">
-                    <Link className="btn-secondary h-9 px-3 text-xs" href={`/outlet-management/${outlet.id}/edit`}>
+                    <Link className="btn-primary h-9 px-3 text-xs" href={`/outlets/${outlet.id}`}>
+                      View Details
+                    </Link>
+                    <Link className="btn-secondary h-9 px-3 text-xs" href={`/outlets/${outlet.id}/edit`}>
                       Edit
                     </Link>
                     <button
-                      className="h-9 rounded-[14px] border border-red-100 bg-red-50 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                      className={`h-9 px-3 rounded-[14px] text-xs font-semibold border transition ${
+                        outlet.status === "ACTIVE"
+                          ? "border-red-100 bg-red-50 text-red-700 hover:bg-red-100"
+                          : "border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      }`}
                       type="button"
-                      disabled={outlet.status === "INACTIVE"}
-                      onClick={() => setConfirm(outlet)}
+                      onClick={() => toggleStatus(outlet)}
                     >
-                      {outlet.status === "INACTIVE" ? "Inactive" : "Delete"}
+                      {outlet.status === "ACTIVE" ? "Disable" : "Enable"}
                     </button>
                   </div>
                 </td>

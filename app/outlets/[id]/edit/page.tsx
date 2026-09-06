@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -12,29 +12,48 @@ import { DeliverySlabsEditor } from "@/components/delivery-slabs-editor";
 import { apiRequest } from "@/lib/api";
 import { INDIAN_STATES_AND_CITIES } from "@/lib/indian-states-cities";
 
-type Franchise = {
+type Outlet = {
   id: string;
   name: string;
+  code: string;
+  address: string;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  phone: string | null;
+  email: string | null;
+  openingTime: string | null;
+  closingTime: string | null;
+  dineIn: boolean;
+  takeaway: boolean;
+  delivery: boolean;
+  onlineOrderingEnabled: boolean;
+  deliveryKmPricing: Array<{ km: number; price: number }> | null;
+  status: string;
+  franchiseId: string | null;
 };
 
-export default function NewOutletPage() {
+export default function EditOutletPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
   const router = useRouter();
 
-  const [franchises, setFranchises] = useState<Franchise[]>([]);
-  const [loadingFranchises, setLoadingFranchises] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const [form, setForm] = useState({
-    franchiseId: "",
     name: "",
     code: "",
     phone: "",
     email: "",
     address: "",
+    city: "",
     state: "Gujarat",
-    city: "Surat",
     pincode: "",
     openingTime: "10:00",
     closingTime: "23:00",
@@ -47,26 +66,49 @@ export default function NewOutletPage() {
       { km: 3, price: 45 },
       { km: 5, price: 70 },
     ] as Array<{ km: number | string; price: number | string }>,
+    status: "ACTIVE",
+    franchiseId: "",
   });
 
-  const [existingOutlets, setExistingOutlets] = useState<Array<{ id: string; name: string; code: string }>>([]);
-  const [copyFromOutletId, setCopyFromOutletId] = useState("");
-
   useEffect(() => {
-    apiRequest<Franchise[]>("/franchises")
-      .then((data) => {
-        setFranchises(data);
-        if (data.length > 0) {
-          setForm((prev) => ({ ...prev, franchiseId: data[0].id }));
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoadingFranchises(false));
+    loadOutlet();
+  }, [id]);
 
-    apiRequest<Array<{ id: string; name: string; code: string }>>("/outlets")
-      .then((data) => setExistingOutlets(data))
-      .catch(() => {});
-  }, []);
+  async function loadOutlet() {
+    setLoading(true);
+    try {
+      const res = await apiRequest<Outlet>(`/outlets/${id}`);
+      setForm({
+        name: res.name || "",
+        code: res.code || "",
+        phone: res.phone || "",
+        email: res.email || "",
+        address: res.address || "",
+        city: res.city || "",
+        state: res.state || "Gujarat",
+        pincode: res.pincode || "",
+        openingTime: res.openingTime || "10:00",
+        closingTime: res.closingTime || "23:00",
+        dineIn: res.dineIn ?? true,
+        takeaway: res.takeaway ?? true,
+        delivery: res.delivery ?? true,
+        onlineOrderingEnabled: res.onlineOrderingEnabled ?? true,
+        deliveryKmPricing: (res.deliveryKmPricing && res.deliveryKmPricing.length > 0)
+          ? res.deliveryKmPricing
+          : [
+              { km: 2, price: 30 },
+              { km: 3, price: 45 },
+              { km: 5, price: 70 },
+            ],
+        status: res.status || "ACTIVE",
+        franchiseId: res.franchiseId || "",
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load outlet details");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const stateOptions = useMemo(() => {
     return INDIAN_STATES_AND_CITIES.map((s) => ({ label: s.state, value: s.state }));
@@ -79,90 +121,54 @@ export default function NewOutletPage() {
       : [{ label: form.city || "Custom", value: form.city }];
   }, [form.state, form.city]);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setSaving(true);
     setError("");
 
     try {
-      const createdOutlet = await apiRequest<{ id: string }>("/outlets", {
-        method: "POST",
+      await apiRequest(`/outlets/${id}`, {
+        method: "PATCH",
         body: {
           ...form,
-          franchiseId: form.franchiseId || undefined,
-          deliveryKmPricing: form.deliveryKmPricing.map((item) => ({
-            km: Number(item.km),
-            price: Number(item.price),
-          })),
+          deliveryKmPricing: form.deliveryKmPricing
+            ? form.deliveryKmPricing.map((item) => ({
+                km: Number(item.km),
+                price: Number(item.price),
+              }))
+            : null,
         },
       });
-
-      if (copyFromOutletId) {
-        await apiRequest(`/outlets/${createdOutlet.id}/copy-menu-from/${copyFromOutletId}`, {
-          method: "POST",
-        });
-      }
-
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create outlet");
+      setError(err instanceof Error ? err.message : "Failed to update outlet");
     } finally {
       setSaving(false);
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center text-sm font-semibold text-[#766b64]">
+        Loading outlet details...
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHeader
-        title="Add New Outlet"
-        description="Create a new outlet location with required address details, operating hours, and service settings."
-        action={{ href: "/outlets", label: "Back to Outlets" }}
+        title={`Edit Outlet: ${form.name}`}
+        description="Update outlet contact, location, business hours and service permissions."
+        action={
+          form.franchiseId
+            ? { href: `/franchises/${form.franchiseId}`, label: "Back to Franchise" }
+            : { href: "/outlets", label: "Back to Outlets" }
+        }
       />
 
-      <form className="space-y-6" onSubmit={submit}>
+      <form className="space-y-6" onSubmit={handleSubmit}>
         <FormSection title="Outlet Information">
-          <div>
-            <label className="form-label flex items-center gap-1">
-              <span>Franchise Assignment</span>
-            </label>
-            <select
-              className="form-input cursor-pointer bg-white"
-              value={form.franchiseId}
-              onChange={(e) => setForm({ ...form, franchiseId: e.target.value })}
-            >
-              <option value="">-- Standalone (No Franchise) --</option>
-              {franchises.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-            {loadingFranchises && (
-              <p className="mt-1 text-xs text-[#766b64]">Loading franchises...</p>
-            )}
-          </div>
-
-          <div>
-            <label className="form-label flex items-center gap-1">
-              <span>📋 Copy Whole Menu From Outlet (Optional)</span>
-            </label>
-            <select
-              className="form-input cursor-pointer bg-white font-semibold text-[#7c3fe0]"
-              value={copyFromOutletId}
-              onChange={(e) => setCopyFromOutletId(e.target.value)}
-            >
-              <option value="">-- Start with Blank Menu --</option>
-              {existingOutlets.map((o) => (
-                <option key={o.id} value={o.id}>
-                  Copy Menu from: {o.name} ({o.code})
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-[11px] text-[#766b64]">
-              Copies all categories, items, prices, and add-on groups into this new outlet automatically.
-            </p>
-          </div>
-
           <div>
             <label className="form-label flex items-center gap-1">
               <span>Outlet Name</span>
@@ -173,7 +179,6 @@ export default function NewOutletPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
-              placeholder="e.g. Surat Main Branch"
             />
           </div>
 
@@ -187,7 +192,6 @@ export default function NewOutletPage() {
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value })}
               required
-              placeholder="e.g. OUT-SURAT-01"
             />
           </div>
 
@@ -218,7 +222,6 @@ export default function NewOutletPage() {
               className="form-input"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="outlet@example.com"
             />
           </div>
 
@@ -232,7 +235,6 @@ export default function NewOutletPage() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               required
-              placeholder="Full shop / building address"
             />
           </div>
 
@@ -284,7 +286,6 @@ export default function NewOutletPage() {
               value={form.pincode}
               onChange={(e) => setForm({ ...form, pincode: e.target.value })}
               required
-              placeholder="395007"
             />
           </div>
 
@@ -306,6 +307,18 @@ export default function NewOutletPage() {
               value={form.closingTime}
               onChange={(e) => setForm({ ...form, closingTime: e.target.value })}
             />
+          </div>
+
+          <div>
+            <label className="form-label">Status</label>
+            <select
+              className="form-input cursor-pointer bg-white"
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
           </div>
         </FormSection>
 
@@ -348,25 +361,28 @@ export default function NewOutletPage() {
 
           <div className="md:col-span-2">
             <DeliverySlabsEditor
-              slabs={form.deliveryKmPricing}
+              slabs={form.deliveryKmPricing || []}
               onChange={(slabs) => setForm({ ...form, deliveryKmPricing: slabs })}
             />
           </div>
         </FormSection>
 
         <div className="flex justify-end gap-3">
-          <Link className="btn-secondary" href="/outlets">
+          <Link
+            className="btn-secondary"
+            href={form.franchiseId ? `/franchises/${form.franchiseId}` : "/outlets"}
+          >
             Cancel
           </Link>
           <button className="btn-primary" type="submit" disabled={saving}>
-            {saving ? "Creating..." : "Save Outlet"}
+            {saving ? "Saving..." : "Save Outlet Changes"}
           </button>
         </div>
       </form>
 
       <ResultDialog
         open={!!error}
-        title="Creation Error"
+        title="Update Error"
         message={error}
         tone="error"
         onPrimary={() => setError("")}
@@ -374,8 +390,8 @@ export default function NewOutletPage() {
 
       <ResultDialog
         open={success}
-        title="Outlet Created"
-        message="The new outlet location has been created successfully."
+        title="Outlet Updated"
+        message="The outlet details have been successfully updated."
         tone="success"
         onPrimary={() => {
           setSuccess(false);

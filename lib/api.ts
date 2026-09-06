@@ -5,7 +5,7 @@ import { clearAuthSession, getAccessToken } from "./auth";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 type RequestOptions = {
-  method?: "GET" | "POST" | "PATCH";
+  method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
   body?: unknown;
   auth?: boolean;
 };
@@ -82,9 +82,17 @@ export type LoginResponse =
       };
     };
 
-export type PhoneOtpResponse = {
-  status: "PHONE_OTP_SENT";
-  loginOtpToken: string;
-  expiresInSeconds: number;
-  devOtp?: string;
-};
+export type PhoneOtpResponse =
+  | {
+      status: "PHONE_OTP_SENT";
+      loginOtpToken: string;
+      expiresInSeconds: number;
+      devOtp?: string;
+    }
+  | {
+      status: "2FA_REQUIRED";
+      method?: "AUTH_APP" | "OTP";
+      twoFactorToken: string;
+      expiresInSeconds: number;
+      devOtp?: string;
+    };

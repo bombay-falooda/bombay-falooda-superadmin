@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { FormSection } from "@/components/form-section";
 import { PageHeader } from "@/components/page-header";
 import { ResultDialog } from "@/components/result-dialog";
+import { CountryCodePicker } from "@/components/country-code-picker";
 import { apiRequest } from "@/lib/api";
 
 type Outlet = {
@@ -15,7 +16,8 @@ type Outlet = {
   code: string;
   address: string;
   status: string;
-  franchise?: { name: string } | null;
+  franchiseId?: string | null;
+  franchise?: { id?: string; name: string } | null;
 };
 
 type PosDevice = {
@@ -107,6 +109,11 @@ export default function EditPosDevicePage() {
     [form.outletId, outlets],
   );
 
+  const backUrl = useMemo(() => {
+    const fid = selectedOutlet?.franchiseId || selectedOutlet?.franchise?.id;
+    return fid ? `/franchises/${fid}` : "/pos-devices";
+  }, [selectedOutlet]);
+
   function setValue(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -153,8 +160,11 @@ export default function EditPosDevicePage() {
 
   return (
     <>
-      <PageHeader title="Edit POS Device" description="Update outlet assignment, code, handler and temporary access window.">
-        <Link className="btn-secondary" href="/pos-devices">
+      <PageHeader
+        title={`Edit POS Device: ${form.name}`}
+        description="Update outlet assignment, code, handler and temporary access window."
+      >
+        <Link className="btn-secondary" href={backUrl}>
           Back
         </Link>
       </PageHeader>
@@ -177,12 +187,15 @@ export default function EditPosDevicePage() {
         </div>
       </section>
 
-      <form className="space-y-5" onSubmit={submit}>
+      <form className="space-y-6" onSubmit={submit}>
         <FormSection title="Outlet Selection">
-          <label>
-            <span className="form-label">Outlet</span>
+          <div>
+            <label className="form-label flex items-center gap-1">
+              <span>Outlet</span>
+              <span className="text-sm font-bold text-red-500">*</span>
+            </label>
             <select
-              className="form-input"
+              className="form-input cursor-pointer bg-white"
               required
               value={form.outletId}
               onChange={(event) => setValue("outletId", event.target.value)}
@@ -195,9 +208,10 @@ export default function EditPosDevicePage() {
                 </option>
               ))}
             </select>
-          </label>
-          <div className="rounded-[18px] border border-[#eadfd5] bg-white/62 p-4 shadow-[0_10px_24px_rgba(76,54,35,0.04)]">
-            <div className="font-display text-xl font-semibold text-[#070b21]">
+          </div>
+
+          <div className="rounded-[18px] border border-[#eadfd5] bg-white/68 p-4 shadow-xs">
+            <div className="font-display text-lg font-semibold text-[#070b21]">
               {selectedOutlet?.name || "No outlet selected"}
             </div>
             <div className="mt-1 text-sm text-[#766b64]">
@@ -208,34 +222,61 @@ export default function EditPosDevicePage() {
           </div>
         </FormSection>
 
-        <FormSection title="POS Details">
-          <label>
-            <span className="form-label">POS Name</span>
-            <input className="form-input" required value={form.name} onChange={(event) => setValue("name", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">Device Code</span>
-            <input className="form-input" value={form.deviceCode} onChange={(event) => setValue("deviceCode", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">New PIN</span>
-            <input className="form-input" maxLength={12} minLength={4} value={form.pin} onChange={(event) => setValue("pin", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">Type</span>
-            <select
+        <FormSection title="POS Device Details">
+          <div>
+            <label className="form-label flex items-center gap-1">
+              <span>POS Device Name</span>
+              <span className="text-sm font-bold text-red-500">*</span>
+            </label>
+            <input
               className="form-input"
+              required
+              value={form.name}
+              onChange={(event) => setValue("name", event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="form-label flex items-center gap-1">
+              <span>Device Code</span>
+              <span className="text-sm font-bold text-red-500">*</span>
+            </label>
+            <input
+              className="form-input font-mono"
+              required
+              value={form.deviceCode}
+              onChange={(event) => setValue("deviceCode", event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="form-label">New Security PIN</label>
+            <input
+              className="form-input"
+              maxLength={12}
+              minLength={4}
+              placeholder="Leave blank to keep existing PIN"
+              value={form.pin}
+              onChange={(event) => setValue("pin", event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="form-label">Type</label>
+            <select
+              className="form-input cursor-pointer bg-white"
               value={form.type}
               onChange={(event) => setValue("type", event.target.value)}
             >
               <option value="PERMANENT">Permanent POS</option>
               <option value="TEMPORARY">Temporary POS</option>
             </select>
-          </label>
-          <label>
-            <span className="form-label">Status</span>
+          </div>
+
+          <div>
+            <label className="form-label">Status</label>
             <select
-              className="form-input"
+              className="form-input cursor-pointer bg-white"
               value={form.status}
               onChange={(event) => setValue("status", event.target.value)}
             >
@@ -245,38 +286,76 @@ export default function EditPosDevicePage() {
               <option value="EXPIRED">Expired</option>
               <option value="REVOKED">Revoked</option>
             </select>
-          </label>
+          </div>
         </FormSection>
 
-        <FormSection title="Temporary POS Details">
-          <label>
-            <span className="form-label">Event Name</span>
-            <input className="form-input" value={form.eventName} onChange={(event) => setValue("eventName", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">Event Location</span>
-            <input className="form-input" value={form.eventLocation} onChange={(event) => setValue("eventLocation", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">Handler Name</span>
-            <input className="form-input" value={form.handlerName} onChange={(event) => setValue("handlerName", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">Handler Phone</span>
-            <input className="form-input" value={form.handlerPhone} onChange={(event) => setValue("handlerPhone", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">Valid From</span>
-            <input className="form-input" type="datetime-local" value={form.validFrom} onChange={(event) => setValue("validFrom", event.target.value)} />
-          </label>
-          <label>
-            <span className="form-label">Valid Until</span>
-            <input className="form-input" type="datetime-local" value={form.validUntil} onChange={(event) => setValue("validUntil", event.target.value)} />
-          </label>
-        </FormSection>
+        {form.type === "TEMPORARY" ? (
+          <FormSection title="Temporary POS Details">
+            <div>
+              <label className="form-label">Event Name</label>
+              <input
+                className="form-input"
+                value={form.eventName}
+                onChange={(event) => setValue("eventName", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Event Location</label>
+              <input
+                className="form-input"
+                value={form.eventLocation}
+                onChange={(event) => setValue("eventLocation", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Handler Name</label>
+              <input
+                className="form-input"
+                value={form.handlerName}
+                onChange={(event) => setValue("handlerName", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Handler Phone</label>
+              <div className="flex items-center gap-2.5">
+                <CountryCodePicker value="+91" />
+                <input
+                  className="form-input min-w-0 flex-1"
+                  type="tel"
+                  placeholder="99999 99999"
+                  value={form.handlerPhone}
+                  onChange={(event) => setValue("handlerPhone", event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label">Valid From</label>
+              <input
+                className="form-input"
+                type="datetime-local"
+                value={form.validFrom}
+                onChange={(event) => setValue("validFrom", event.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Valid Until</label>
+              <input
+                className="form-input"
+                type="datetime-local"
+                value={form.validUntil}
+                onChange={(event) => setValue("validUntil", event.target.value)}
+              />
+            </div>
+          </FormSection>
+        ) : null}
 
         <div className="flex justify-end gap-3">
-          <Link className="btn-secondary" href="/pos-devices">
+          <Link className="btn-secondary" href={backUrl}>
             Cancel
           </Link>
           <button className="btn-primary" type="submit" disabled={saving}>
@@ -290,11 +369,11 @@ export default function EditPosDevicePage() {
         title={dialog.title}
         message={dialog.message}
         tone={dialog.error ? "error" : "success"}
-        primaryLabel={dialog.error ? "Try Again" : "Back to POS Devices"}
+        primaryLabel={dialog.error ? "Try Again" : "Done"}
         onPrimary={() =>
           dialog.error
             ? setDialog((current) => ({ ...current, open: false }))
-            : router.push("/pos-devices")
+            : router.push(backUrl)
         }
       />
     </>

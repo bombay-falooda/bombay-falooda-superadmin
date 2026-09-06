@@ -27,7 +27,7 @@ body {
 }
 
 .font-display {
-  font-family: var(--font-display), Georgia, serif;
+  font-family: var(--font-plus-jakarta), Arial, Helvetica, sans-serif;
 }
 
 button,

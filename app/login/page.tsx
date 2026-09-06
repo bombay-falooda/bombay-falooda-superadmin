@@ -7,9 +7,11 @@ import { useRouter } from "next/navigation";
 import { apiRequest, type LoginResponse, type PhoneOtpResponse } from "@/lib/api";
 import { saveAuthSession } from "@/lib/auth";
 import { ResultDialog } from "@/components/result-dialog";
+import { CountryCodePicker } from "@/components/country-code-picker";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [countryDialCode, setCountryDialCode] = useState("+91");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [loginOtpToken, setLoginOtpToken] = useState("");
@@ -30,11 +32,21 @@ export default function LoginPage() {
 
     try {
       if (step === "PHONE") {
+        const fullPhone = `${countryDialCode}${phone.trim().replace(/^0+/, "")}`;
         const response = await apiRequest<PhoneOtpResponse>("/auth/request-login-otp", {
           method: "POST",
           auth: false,
-          body: { phone: phone.trim() },
+          body: { phone: fullPhone },
         });
+
+        if ("status" in response && response.status === "2FA_REQUIRED") {
+          sessionStorage.setItem("bf_two_factor_token", response.twoFactorToken);
+          if (response.devOtp) {
+            sessionStorage.setItem("bf_dev_otp", response.devOtp);
+          }
+          router.push("/verify-2fa");
+          return;
+        }
 
         setLoginOtpToken(response.loginOtpToken);
         setDevOtp(response.devOtp || "");
@@ -97,7 +109,7 @@ export default function LoginPage() {
 
           <div className="relative z-10 mt-16 max-w-xl">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#7c3fe0]">Platform command</p>
-            <h2 className="font-display mt-4 text-5xl font-semibold leading-[1.05]">
+            <h2 className="font-display mt-4 text-4xl font-semibold leading-[1.05]">
               One secure room for every franchise, outlet and POS decision.
             </h2>
             <p className="mt-5 max-w-lg text-sm font-medium leading-7 text-[#766b64]">
@@ -122,7 +134,7 @@ export default function LoginPage() {
               <Image src="/bombay-falooda-logo.jpeg" alt="Bombay Falooda" width={72} height={72} className="h-full w-full object-cover" />
             </div>
             <div className="mt-6 text-sm font-bold uppercase tracking-[0.16em] text-[#7c3fe0] lg:mt-0">Executive access</div>
-            <h1 className="font-display mt-3 text-4xl font-semibold text-[#070b21]">
+            <h1 className="font-display mt-3 text-2xl md:text-4xl font-semibold text-[#070b21]">
               Superadmin Login
             </h1>
             <p className="mt-3 text-sm font-medium leading-6 text-[#766b64]">
@@ -134,7 +146,21 @@ export default function LoginPage() {
             {step === "PHONE" ? (
               <div>
                 <label className="form-label" htmlFor="phone">Registered phone number</label>
-                <input id="phone" className="form-input" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+919999999999" />
+                <div className="flex items-center gap-2.5">
+                  <CountryCodePicker
+                    value={countryDialCode}
+                    onChange={setCountryDialCode}
+                  />
+                  <input
+                    id="phone"
+                    type="tel"
+                    className="h-[48px] min-w-0 flex-1 rounded-[16px] border border-[#eadfd5] bg-white/90 px-4 text-sm font-semibold text-[#070b21] outline-none focus:border-[#7c3fe0] focus:ring-4 focus:ring-[#7c3fe0]/12 transition-all placeholder:text-gray-400 placeholder:font-normal shadow-sm"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="99999 99999"
+                    required
+                  />
+                </div>
               </div>
             ) : (
               <>
