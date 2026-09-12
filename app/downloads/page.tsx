@@ -8,8 +8,8 @@ export default function SuperAdminDownloadsPage() {
       id: "pos",
       name: "POS Billing Terminal App",
       badge: "Counter Billing & KOT",
-      filename: "Bombay-Falooda-POS-Setup-v1.0.0.exe",
-      size: "84.2 MB",
+      filename: "Bombay-Falooda-POS-Setup.exe",
+      size: "78.1 MB",
       version: "v1.0.0 (64-bit)",
       color: "bg-[#b82e46] text-white",
       description:
@@ -20,14 +20,14 @@ export default function SuperAdminDownloadsPage() {
         "Fast One-Click KOT & Split Billing",
         "Real-Time OS Push Alerts for Digital Orders",
       ],
-      downloadUrl: "https://api.bombayfalooda.com/api/downloads/pos-setup.exe",
+      downloadUrl: "https://github.com/bombay-falooda/bombay-falooda-desktop/releases/download/v1.0.0/Bombay-Falooda-POS-Setup.exe",
     },
     {
       id: "franchise",
       name: "Franchise Owner Portal App",
       badge: "Outlet & Sales Operations",
-      filename: "Bombay-Falooda-Franchise-Setup-v1.0.0.exe",
-      size: "88.6 MB",
+      filename: "Bombay-Falooda-Franchise-Setup.exe",
+      size: "78.1 MB",
       version: "v1.0.0 (64-bit)",
       color: "bg-purple-600 text-white",
       description:
@@ -38,14 +38,14 @@ export default function SuperAdminDownloadsPage() {
         "Staff Attendance & Check-In Monitoring",
         "Direct Z-Report Generation & Till Auditing",
       ],
-      downloadUrl: "https://api.bombayfalooda.com/api/downloads/franchise-setup.exe",
+      downloadUrl: "https://github.com/bombay-falooda/bombay-falooda-desktop/releases/download/v1.0.0/Bombay-Falooda-Franchise-Setup.exe",
     },
     {
       id: "superadmin",
       name: "SuperAdmin Master Workspace App",
       badge: "Corporate HQ Platform",
-      filename: "Bombay-Falooda-SuperAdmin-Setup-v1.0.0.exe",
-      size: "92.1 MB",
+      filename: "Bombay-Falooda-SuperAdmin-Setup.exe",
+      size: "78.1 MB",
       version: "v1.0.0 (64-bit)",
       color: "bg-slate-900 text-white",
       description:
@@ -56,7 +56,7 @@ export default function SuperAdminDownloadsPage() {
         "Real-Time Global System Audit Log Stream",
         "Global Security & 2FA Enforcement Control",
       ],
-      downloadUrl: "https://api.bombayfalooda.com/api/downloads/superadmin-setup.exe",
+      downloadUrl: "https://github.com/bombay-falooda/bombay-falooda-desktop/releases/download/v1.0.0/Bombay-Falooda-SuperAdmin-Setup.exe",
     },
   ];
 
