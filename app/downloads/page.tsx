@@ -20,7 +20,7 @@ export default function SuperAdminDownloadsPage() {
         "Fast One-Click KOT & Split Billing",
         "Real-Time OS Push Alerts for Digital Orders",
       ],
-      downloadUrl: "http://localhost:4000/api/downloads/pos-setup.exe",
+      downloadUrl: "https://api.bombayfalooda.com/api/downloads/pos-setup.exe",
     },
     {
       id: "franchise",
@@ -38,7 +38,7 @@ export default function SuperAdminDownloadsPage() {
         "Staff Attendance & Check-In Monitoring",
         "Direct Z-Report Generation & Till Auditing",
       ],
-      downloadUrl: "http://localhost:4000/api/downloads/franchise-setup.exe",
+      downloadUrl: "https://api.bombayfalooda.com/api/downloads/franchise-setup.exe",
     },
     {
       id: "superadmin",
@@ -56,7 +56,7 @@ export default function SuperAdminDownloadsPage() {
         "Real-Time Global System Audit Log Stream",
         "Global Security & 2FA Enforcement Control",
       ],
-      downloadUrl: "http://localhost:4000/api/downloads/superadmin-setup.exe",
+      downloadUrl: "https://api.bombayfalooda.com/api/downloads/superadmin-setup.exe",
     },
   ];
 
