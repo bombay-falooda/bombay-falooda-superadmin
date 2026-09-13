@@ -83,6 +83,10 @@ type OutletDetail = {
   deliveryKmPricing?: Array<{ km: number; price: number }> | null;
   openingTime?: string | null;
   closingTime?: string | null;
+  zomatoResId?: string | null;
+  swiggyResId?: string | null;
+  ezcaterStoreId?: string | null;
+  urbanpiperStoreId?: string | null;
   franchise?: { id: string; name: string } | null;
   posDevices: PosDevice[];
   users: User[];
@@ -622,6 +626,72 @@ export default function UnifiedOutletPage({
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Aggregator Integrations Card */}
+          <div className="rounded-[20px] border border-[#eadfd5] bg-white/72 p-6 shadow-xs backdrop-blur-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#eadfd5]/60">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-[#8d827a]">
+                  Online Aggregator Integrations & Store IDs
+                </h3>
+                <p className="mt-0.5 text-xs text-[#766b64]">
+                  Unique platform identifiers used to route inbound webhooks and sync inventory dynamically.
+                </p>
+              </div>
+              <Link
+                href={`/outlets/${data.id}/edit`}
+                className="text-xs font-semibold text-[#7c3fe0] hover:underline"
+              >
+                Edit IDs →
+              </Link>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl border border-red-100 bg-red-50/40 p-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                  <span className="text-xs font-bold text-red-950">Zomato</span>
+                </div>
+                <div className="mt-2 font-mono text-sm font-semibold text-red-900">
+                  {data.zomatoResId ? data.zomatoResId : <span className="text-xs font-normal text-[#8d827a]">Not configured</span>}
+                </div>
+                <div className="mt-1 text-[11px] text-[#8d827a]">Direct Webhook / API</div>
+              </div>
+
+              <div className="rounded-xl border border-orange-100 bg-orange-50/40 p-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+                  <span className="text-xs font-bold text-orange-950">Swiggy</span>
+                </div>
+                <div className="mt-2 font-mono text-sm font-semibold text-orange-900">
+                  {data.swiggyResId ? data.swiggyResId : <span className="text-xs font-normal text-[#8d827a]">Not configured</span>}
+                </div>
+                <div className="mt-1 text-[11px] text-[#8d827a]">Partner API v2</div>
+              </div>
+
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-bold text-emerald-950">ezCater</span>
+                </div>
+                <div className="mt-2 font-mono text-sm font-semibold text-emerald-900">
+                  {data.ezcaterStoreId ? data.ezcaterStoreId : <span className="text-xs font-normal text-[#8d827a]">Not configured</span>}
+                </div>
+                <div className="mt-1 text-[11px] text-[#8d827a]">GraphQL Catering API</div>
+              </div>
+
+              <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                  <span className="text-xs font-bold text-blue-950">UrbanPiper</span>
+                </div>
+                <div className="mt-2 font-mono text-sm font-semibold text-blue-900">
+                  {data.urbanpiperStoreId ? data.urbanpiperStoreId : <span className="text-xs font-normal text-[#8d827a]">Not configured</span>}
+                </div>
+                <div className="mt-1 text-[11px] text-[#8d827a]">Middleware Fallback</div>
               </div>
             </div>
           </div>

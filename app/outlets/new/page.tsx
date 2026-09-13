@@ -47,6 +47,10 @@ export default function NewOutletPage() {
       { km: 3, price: 45 },
       { km: 5, price: 70 },
     ] as Array<{ km: number | string; price: number | string }>,
+    zomatoResId: "",
+    swiggyResId: "",
+    ezcaterStoreId: "",
+    urbanpiperStoreId: "",
   });
 
   const [existingOutlets, setExistingOutlets] = useState<Array<{ id: string; name: string; code: string }>>([]);
@@ -351,6 +355,72 @@ export default function NewOutletPage() {
               slabs={form.deliveryKmPricing}
               onChange={(slabs) => setForm({ ...form, deliveryKmPricing: slabs })}
             />
+          </div>
+        </FormSection>
+
+        <FormSection title="Online Delivery Integrations (Aggregator Store IDs)">
+          <div>
+            <label className="form-label flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />
+              <span>Zomato Restaurant ID</span>
+            </label>
+            <input
+              className="form-input font-mono"
+              value={form.zomatoResId}
+              onChange={(e) => setForm({ ...form, zomatoResId: e.target.value })}
+              placeholder="e.g. 19823412"
+            />
+            <p className="mt-1 text-[11px] text-[#766b64]">
+              Direct Zomato restaurant identifier for webhook order ingestion.
+            </p>
+          </div>
+
+          <div>
+            <label className="form-label flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-orange-500 inline-block" />
+              <span>Swiggy Restaurant ID</span>
+            </label>
+            <input
+              className="form-input font-mono"
+              value={form.swiggyResId}
+              onChange={(e) => setForm({ ...form, swiggyResId: e.target.value })}
+              placeholder="e.g. 849301"
+            />
+            <p className="mt-1 text-[11px] text-[#766b64]">
+              Direct Swiggy partner outlet identifier.
+            </p>
+          </div>
+
+          <div>
+            <label className="form-label flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" />
+              <span>ezCater Store Number</span>
+            </label>
+            <input
+              className="form-input font-mono"
+              value={form.ezcaterStoreId}
+              onChange={(e) => setForm({ ...form, ezcaterStoreId: e.target.value })}
+              placeholder="e.g. EZ-MUM-01"
+            />
+            <p className="mt-1 text-[11px] text-[#766b64]">
+              Corporate catering ezCater store number.
+            </p>
+          </div>
+
+          <div>
+            <label className="form-label flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
+              <span>UrbanPiper Ref ID (Middleware)</span>
+            </label>
+            <input
+              className="form-input font-mono"
+              value={form.urbanpiperStoreId}
+              onChange={(e) => setForm({ ...form, urbanpiperStoreId: e.target.value })}
+              placeholder="e.g. BF_STORE_001"
+            />
+            <p className="mt-1 text-[11px] text-[#766b64]">
+              Optional 3rd-party aggregator middleware store ID.
+            </p>
           </div>
         </FormSection>
 
